@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { CardFilterChips } from "@/components/cards/CardFilterChips";
@@ -115,23 +114,15 @@ export function CardBrowser() {
   const croppedArtworkUrl = cardStaticUrl(defaultImg?.image_cropped_path);
 
   return (
-    <div className="flex h-[calc(100vh-0px)] flex-col">
-      <header className="flex shrink-0 items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard"
-            className="text-sm text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
-          >
-            ← Dashboard
-          </Link>
-          <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-            Thư viện lá bài
-          </h1>
-          <span className="text-sm text-zinc-500">
-            {total.toLocaleString("vi-VN")} lá
-          </span>
-        </div>
-      </header>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex shrink-0 items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
+        <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+          Thư viện lá bài
+        </h1>
+        <span className="text-sm text-zinc-500">
+          {total.toLocaleString("vi-VN")} lá
+        </span>
+      </div>
 
       <div className="flex min-h-0 flex-1 divide-x divide-zinc-200 dark:divide-zinc-800">
         <aside className="flex w-1/2 min-w-0 flex-col">

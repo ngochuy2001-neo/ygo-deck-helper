@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
@@ -107,28 +106,18 @@ export default function SettingsPage() {
     }
   }
 
-  const statusColor = status?.connected
-    ? "bg-emerald-500"
-    : "bg-red-500";
+  const statusColor = status?.connected ? "bg-emerald-500" : "bg-red-500";
 
   return (
-    <div className="flex flex-1 flex-col px-6 py-12">
+    <div className="flex-1 overflow-y-auto px-6 py-8">
       <main className="mx-auto w-full max-w-2xl">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-              Settings — LM Studio
-            </h1>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              Cấu hình kết nối LM Studio cho AgentScope DeckHelper agent.
-            </p>
-          </div>
-          <Link
-            href="/dashboard"
-            className="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-          >
-            ← Dashboard
-          </Link>
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+            Cài đặt — LM Studio
+          </h1>
+          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            Cấu hình kết nối LM Studio cho AgentScope DeckHelper agent.
+          </p>
         </div>
 
         {loading ? (
@@ -186,7 +175,9 @@ export default function SettingsPage() {
 
               {status && (
                 <div className="mb-4 flex items-start gap-3 rounded-lg bg-zinc-50 p-3 dark:bg-zinc-900">
-                  <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${statusColor}`} />
+                  <span
+                    className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${statusColor}`}
+                  />
                   <div>
                     <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
                       {status.connected ? "Đã kết nối" : "Chưa kết nối"}
@@ -221,7 +212,8 @@ export default function SettingsPage() {
               </label>
               {models.length === 0 && (
                 <p className="mt-2 text-xs text-zinc-500">
-                  Nhấn &quot;Kiểm tra kết nối&quot; sau khi bật LM Studio server để tải danh sách model.
+                  Nhấn &quot;Kiểm tra kết nối&quot; sau khi bật LM Studio server để tải danh sách
+                  model.
                 </p>
               )}
             </section>
