@@ -114,6 +114,93 @@ export interface CardPriceDto {
   coolstuffinc_price?: string | null;
 }
 
+export interface RulebookChunkPreview {
+  chunk_id: string;
+  title: string;
+  description: string;
+  content: string;
+  char_count: number;
+  source_headings: string[];
+}
+
+export interface RulebookChunkPreviewResponse {
+  filename: string;
+  chunks: RulebookChunkPreview[];
+}
+
+export interface RulebookIngestResponse {
+  filename: string;
+  embedding_model: string;
+  chunks_ingested: number;
+  chunks: RulebookChunkPreview[];
+}
+
+export interface RulebookRagStats {
+  total_chunks: number;
+  embedding_model: string | null;
+  source_filenames: string[];
+  chunk_ids: string[];
+}
+
+export interface RulebookSearchHit {
+  chunk_id: string;
+  title: string;
+  description: string;
+  content: string;
+  distance: number;
+}
+
+export interface RulebookSearchResponse {
+  query: string;
+  hits: RulebookSearchHit[];
+}
+
+export interface QueryAnalysisBrief {
+  intent: string;
+  rag_scope?: string;
+  language: string;
+  entities: string[];
+  ambiguities: string[];
+  clarified_question: string;
+  rag_search_queries: string[];
+  answer_focus: string;
+  do_not_assume: string[];
+}
+
+export interface LabChatRequest {
+  message: string;
+  use_rag?: boolean;
+  use_query_analyzer?: boolean;
+  rag_limit?: number;
+}
+
+export interface LabRagHitBrief {
+  chunk_id: string;
+  title: string;
+  description: string;
+  distance: number;
+  excerpt: string;
+}
+
+export interface LabChatResponse {
+  reply: string;
+  model_name: string;
+  embedding_model: string;
+  rag_used: boolean;
+  rag_hits: LabRagHitBrief[];
+  query_analysis?: QueryAnalysisBrief | null;
+  rag_scope?: string;
+}
+
+export interface LabInfoResponse {
+  chat_model: string;
+  embedding_model: string;
+  rag_chunks_in_db: number;
+  rag_ready: boolean;
+  lm_studio_connected: boolean;
+  message: string;
+}
+
 export interface CardDetail {
   passcode: number;
   name: string;

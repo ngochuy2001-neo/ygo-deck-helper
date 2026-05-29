@@ -33,6 +33,7 @@ export function CardBrowser() {
     listError,
     loadMore,
     hasMore,
+    isSearchPending,
   } = useCardSearch();
 
   const [selectedPasscode, setSelectedPasscode] = useState<number | null>(null);
@@ -179,13 +180,17 @@ export function CardBrowser() {
               <p className="mb-3 text-sm text-red-600 dark:text-red-400">{listError}</p>
             )}
 
-            {listLoading && items.length === 0 ? (
+            {(listLoading || isSearchPending) && items.length === 0 ? (
               <p className="text-center text-sm text-zinc-500">Đang tải...</p>
-            ) : items.length === 0 ? (
+            ) : items.length === 0 && !listLoading && !isSearchPending ? (
               <p className="text-center text-sm text-zinc-500">
                 Không có lá bài phù hợp. Thử đổi bộ lọc hoặc đồng bộ từ Dashboard.
               </p>
             ) : (
+              <div className="relative">
+                {(listLoading || isSearchPending) && items.length > 0 && (
+                  <div className="pointer-events-none absolute inset-0 z-10 bg-white/50 dark:bg-zinc-950/50" />
+                )}
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
                 {items.map((card) => {
                   const thumb = cardStaticUrl(card.image_small_path);
@@ -222,6 +227,7 @@ export function CardBrowser() {
                     </button>
                   );
                 })}
+              </div>
               </div>
             )}
 

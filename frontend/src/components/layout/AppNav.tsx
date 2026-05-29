@@ -6,6 +6,9 @@ import { usePathname } from "next/navigation";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/cards", label: "Thư viện lá bài" },
+  { href: "/import-ydk", label: "Import YDK" },
+  { href: "/rulebook-rag", label: "Rulebook RAG" },
+  { href: "/lab", label: "Rulebook Lab" },
   { href: "/settings", label: "Cài đặt" },
 ] as const;
 
