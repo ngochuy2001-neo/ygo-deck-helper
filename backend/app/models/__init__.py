@@ -9,6 +9,7 @@ from app.models.card import (
     YgoCardSet,
     YgoCardSyncJob,
 )
+from app.models.rag import RulebookChunkEmbedding
 
 __all__ = [
     "Base",
@@ -18,4 +19,5 @@ __all__ = [
     "YgoCardImage",
     "YgoCardPrice",
     "YgoCardSyncJob",
+    "RulebookChunkEmbedding",
 ]

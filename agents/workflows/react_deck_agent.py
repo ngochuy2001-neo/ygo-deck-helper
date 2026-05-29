@@ -10,9 +10,10 @@ from typing import Any
 
 from agentscope.agent import Agent, ReActConfig
 from agentscope.message import Msg, TextBlock
-from agentscope.tool import FunctionTool, Toolkit
+from agentscope.tool import Toolkit
 
 from config.lm_studio import LMStudioConfig, create_openai_chat_model, load_config
+from tools.allowed_function_tool import AllowedFunctionTool
 from tools.db_queries import query_card_database
 from tools.web_search import web_search
 
@@ -31,8 +32,8 @@ Khi chưa có dữ liệu thật từ tool, hãy nói rõ và đưa gợi ý chu
 def _build_toolkit() -> Toolkit:
     return Toolkit(
         tools=[
-            FunctionTool(web_search),
-            FunctionTool(query_card_database),
+            AllowedFunctionTool(web_search),
+            AllowedFunctionTool(query_card_database),
         ],
     )
 

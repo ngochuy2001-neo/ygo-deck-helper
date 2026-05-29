@@ -1,7 +1,7 @@
 """card search indexes
 
-Revision ID: 002
-Revises: 001
+Revision ID: 002_indexes
+Revises: 002
 Create Date: 2026-05-29
 
 """
@@ -10,8 +10,8 @@ from typing import Sequence, Union
 
 from alembic import op
 
-revision: str = "002"
-down_revision: Union[str, None] = "001"
+revision: str = "002_indexes"
+down_revision: Union[str, None] = "002"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

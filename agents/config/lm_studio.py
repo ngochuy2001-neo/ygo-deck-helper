@@ -13,6 +13,9 @@ from agentscope.model import OpenAIChatModel
 
 CONFIG_PATH = Path(__file__).resolve().parent / "lm_studio.json"
 
+# Mặc định cho mọi AgentScope chat agent (DeckHelper, Judge Lab, QueryAnalyzer)
+DEFAULT_AGENT_TEMPERATURE = 0.1
+
 
 class LMStudioConfig(BaseModel):
     """Cấu hình kết nối LM Studio (OpenAI-compatible API)."""
@@ -65,6 +68,8 @@ def create_openai_chat_model(
     """
     Tạo OpenAIChatModel trỏ tới LM Studio theo cấu hình hiện tại.
 
+    Mặc định ``temperature=0.1`` (``DEFAULT_AGENT_TEMPERATURE``); có thể ghi đè qua ``**parameters``.
+
     Raises:
         ValueError: Khi chưa chọn model_name.
     """
@@ -78,7 +83,8 @@ def create_openai_chat_model(
         api_key=cfg.api_key,
         base_url=cfg.base_url(),
     )
-    model_params = OpenAIChatModel.Parameters(**parameters) if parameters else None
+    merged_params = {"temperature": DEFAULT_AGENT_TEMPERATURE, **parameters}
+    model_params = OpenAIChatModel.Parameters(**merged_params)
 
     return OpenAIChatModel(
         credential=credential,

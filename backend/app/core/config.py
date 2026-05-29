@@ -32,6 +32,16 @@ class Settings(BaseSettings):
     CARD_SYNC_PAGE_SIZE: int = 100
     CARD_SYNC_REQUEST_DELAY_MS: int = 100
 
+    # RAG Rulebook (LM Studio embeddings + pgvector)
+    RAG_EMBEDDING_MODEL: str = "text-embedding-embeddinggamma-300m-qat"
+    RAG_EMBEDDING_DIMENSION: int = 768
+
+    # Tab thử nghiệm — chat model trên LM Studio
+    LAB_CHAT_MODEL: str = "google/gemma-4-e4b"
+
+    # Phân tích câu hỏi trước khi gọi agent trả lời (QueryAnalyzer)
+    QUERY_ANALYZER_ENABLED: bool = True
+
     @property
     def card_images_dir(self) -> Path:
         if self.CARD_IMAGES_DIR.strip():

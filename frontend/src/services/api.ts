@@ -11,6 +11,13 @@ import type {
   LMStudioSettings,
   LMStudioSettingsUpdate,
   LMStudioStatusResponse,
+  LabChatRequest,
+  LabChatResponse,
+  LabInfoResponse,
+  RulebookChunkPreviewResponse,
+  RulebookIngestResponse,
+  RulebookRagStats,
+  RulebookSearchResponse,
 } from "@/types";
 import type { CardFilterOptions, CardSearchFilters, StatRange } from "@/types/cardSearch";
 
@@ -167,4 +174,77 @@ export async function listCards(
 /** Chi tiết một lá bài. */
 export async function getCardDetail(passcode: number): Promise<CardDetail> {
   return fetchApi<CardDetail>(`/api/v1/cards/${passcode}`);
+}
+
+async function fetchMultipart<T>(path: string, formData: FormData): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    let detail = response.statusText;
+    try {
+      const body = (await response.json()) as { detail?: string };
+      if (body.detail) detail = body.detail;
+    } catch {
+      // giữ statusText
+    }
+    throw new Error(detail);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+/** Xem trước chunk Rulebook từ file .md (chưa embed). */
+export async function previewRulebookChunks(
+  file: File,
+): Promise<RulebookChunkPreviewResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return fetchMultipart<RulebookChunkPreviewResponse>(
+    "/api/v1/rag/rulebook/preview",
+    formData,
+  );
+}
+
+/** Cắt chunk, embed LM Studio và lưu pgvector. */
+export async function ingestRulebookChunks(
+  file: File,
+): Promise<RulebookIngestResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return fetchMultipart<RulebookIngestResponse>(
+    "/api/v1/rag/rulebook/ingest",
+    formData,
+  );
+}
+
+/** Thống kê RAG Rulebook trong database. */
+export async function getRulebookRagStats(): Promise<RulebookRagStats> {
+  return fetchApi<RulebookRagStats>("/api/v1/rag/rulebook/stats");
+}
+
+/** Tìm kiếm semantic trên chunk Rulebook. */
+export async function searchRulebookRag(
+  query: string,
+  limit = 4,
+): Promise<RulebookSearchResponse> {
+  return fetchApi<RulebookSearchResponse>("/api/v1/rag/rulebook/search", {
+    method: "POST",
+    body: JSON.stringify({ query, limit }),
+  });
+}
+
+/** Trạng thái tab thử nghiệm (Gemma + RAG). */
+export async function getLabInfo(): Promise<LabInfoResponse> {
+  return fetchApi<LabInfoResponse>("/api/v1/lab/info");
+}
+
+/** Chat thử nghiệm AgentScope + Rulebook RAG. */
+export async function labChat(payload: LabChatRequest): Promise<LabChatResponse> {
+  return fetchApi<LabChatResponse>("/api/v1/lab/chat", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }

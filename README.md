@@ -1,21 +1,23 @@
 # YGO Deck Helper
 
-Monorepo gồm frontend Next.js, backend FastAPI và AgentScope ReAct agent (scaffold — chưa triển khai tính năng nghiệp vụ).
+Monorepo hỗ trợ người chơi Yu-Gi-Oh!: đồng bộ thư viện lá bài (YGOPRODeck), duyệt/lọc lá bài, import decklist `.ydk`, chat với AI agent **DeckHelper**, và **giải thích luật** qua Rulebook RAG + **Rulebook Lab** (AgentScope + LM Studio).
 
-## Cấu trúc
+| Thư mục | Vai trò |
+|---------|---------|
+| `frontend/` | Next.js (App Router), TypeScript, Tailwind |
+| `backend/` | FastAPI, PostgreSQL, pgvector RAG |
+| `agents/` | AgentScope ReAct agents, tools, LM Studio config |
 
-- `frontend/` — Next.js App Router, landing + dashboard/login placeholder
-- `backend/` — FastAPI skeleton với health check và router stub v1
-- `agents/` — AgentScope ReAct agent stub (`DeckHelper`), tools/workflows placeholder
+Tài liệu chi tiết (workflow, DB, API, RAG): **[`docs/README.md`](docs/README.md)**.
 
 ## Yêu cầu
 
 - Node.js 20+
 - Python 3.10+
-- PostgreSQL 14+ (database `ygo-helper`)
-- [LM Studio](https://lmstudio.ai/)
+- PostgreSQL 14+ với extension **pgvector**
+- [LM Studio](https://lmstudio.ai/) — chat model + embedding model
 
-## Cài đặt
+## Cài đặt nhanh
 
 ### Backend
 
@@ -25,6 +27,7 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
+alembic upgrade head
 ```
 
 ### Agents
@@ -46,85 +49,124 @@ cp .env.local.example .env.local
 
 ## Chạy local
 
-1. Backend:
+1. **LM Studio** — bật local server, load model chat (Settings) và model embedding (`text-embedding-embeddinggamma-300m-qat` hoặc tương đương).
+
+2. **Backend:**
 
 ```bash
-cd backend
-source .venv/bin/activate
+cd backend && source .venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-2. Frontend:
+3. **Frontend:**
 
 ```bash
-cd frontend
-npm run dev
+cd frontend && npm run dev
 ```
 
-3. Mở `http://localhost:3000` — landing page với link tới Dashboard, Thư viện lá bài và Login.
+4. Mở `http://localhost:3000` — Dashboard, Thư viện lá bài, **Rulebook RAG**, **Thử nghiệm (Lab)**, Settings.
 
-4. Thư viện lá bài: `http://localhost:3000/cards` — grid ảnh `_small.jpg`, tìm kiếm, cuộn tải thêm, panel chi tiết bên phải.
-
-4. Kiểm tra backend: `GET http://localhost:8000/health` → `{"status":"ok","database":"connected"}`
+5. Health: `GET http://localhost:8000/health` → `{"status":"ok","database":"connected"}`
 
 ### PostgreSQL
-
-Cấu hình trong `backend/.env` (xem `.env.example`):
 
 | Biến | Mặc định |
 |------|----------|
 | `POSTGRES_HOST` | `localhost` |
-| `POSTGRES_PORT` | `5432` |
-| `POSTGRES_USER` | `postgres` |
-| `POSTGRES_PASSWORD` | *(mật khẩu của bạn)* |
 | `POSTGRES_DB` | `ygo-helper` |
-
-Tạo database nếu chưa có:
 
 ```bash
 createdb -U postgres ygo-helper
+# Cần extension vector (migration 003 tự CREATE EXTENSION)
 ```
 
-## API (hiện có)
+## Rulebook RAG (tóm tắt)
+
+Hệ thống **semantic search** trên tài liệu luật markdown (chunk theo tiêu đề `##`), lưu embedding trong PostgreSQL (**pgvector**).
+
+### Chuẩn bị dữ liệu
+
+1. Vào **`/rulebook-rag`** trên frontend (hoặc API `POST /api/v1/rag/rulebook/ingest`).
+2. Upload **từng file** `.md` (mỗi lần ingest chỉ thay chunk của file đó):
+
+| File gợi ý | Nội dung |
+|------------|----------|
+| `ygo_core_rulebook_summary.md` | Luật cốt lõi, Spell Speed, Chain |
+| `ygo_advanced_psct.md` | PSCT, timing, activation |
+| `ygo_advanced_conjunctions.md` | And / Then / Also (nội tại 1 lá) |
+
+3. LM Studio phải đang chạy với model embedding (`RAG_EMBEDDING_MODEL` trong `.env`).
+
+### API RAG
 
 | Method | Path | Mô tả |
 |--------|------|--------|
-| GET | `/health` | Health check (bao gồm trạng thái PostgreSQL) |
-| GET | `/api/v1/cards/stats` | Thống kê lá bài trong DB |
-| POST | `/api/v1/cards/sync` | Đồng bộ lá bài từ YGOPRODeck (nền) |
-| GET | `/api/v1/cards/sync/{job_id}` | Trạng thái job đồng bộ |
-| GET | `/api/v1/cards/sync/latest` | Job đồng bộ gần nhất |
-| GET | `/api/v1/cards?q=&offset=&limit=` | Danh sách lá bài (tìm kiếm + phân trang) |
-| GET | `/api/v1/cards/{passcode}` | Chi tiết lá bài |
+| POST | `/api/v1/rag/rulebook/preview` | Xem trước chunk (chưa embed) |
+| POST | `/api/v1/rag/rulebook/ingest` | Cắt chunk + embed + lưu DB |
+| GET | `/api/v1/rag/rulebook/stats` | Số chunk, danh sách file nguồn |
+| POST | `/api/v1/rag/rulebook/search` | Tìm kiếm (có `rag_scope` tùy chọn) |
 
-## API (LM Studio & Agent)
+## Trả lời câu hỏi luật & deck (Agents)
+
+### Rulebook Lab — `/lab`
+
+Luồng giải thích luật (ưu tiên độ chính xác):
+
+```
+Câu hỏi → QueryAnalyzer (chuẩn hóa + rag_scope)
+        → RAG có lọc intent (tránh nhầm Conjunctions khi hỏi Chain/destroy)
+        → YGO Judge Lab agent (system prompt Head Judge + JSON context)
+```
 
 | Method | Path | Mô tả |
 |--------|------|--------|
-| GET | `/api/v1/settings/lm-studio` | Lấy cấu hình LM Studio |
-| PUT | `/api/v1/settings/lm-studio` | Lưu cấu hình |
-| GET | `/api/v1/settings/lm-studio/status` | Trạng thái LM Studio |
-| POST | `/api/v1/agent/chat` | Chạy ReAct agent |
+| GET | `/api/v1/lab/info` | Trạng thái LM Studio, RAG, model lab |
+| POST | `/api/v1/lab/chat` | Chat thử nghiệm (`use_rag`, `use_query_analyzer`) |
 
-## Đồng bộ lá bài (Dashboard)
+Biến môi trường: `LAB_CHAT_MODEL`, `QUERY_ANALYZER_ENABLED` — xem `backend/.env.example`.
 
-Trên `/dashboard`, nút **Đồng bộ lá bài từ YGOPRODeck** gọi [YGOPRODeck API v7](https://ygoprodeck.com/api-guide/), lưu vào PostgreSQL và tải ảnh vào `backend/storage/cards/` (phục vụ qua `/static/cards/...`).
+**Intent RAG** (tự phân loại):
+
+| `rag_scope` | Khi nào | Nguồn retrieve |
+|-------------|---------|----------------|
+| `chain_interaction` | Destroy/negate trên Chain, Spell Speed | Core rulebook + PSCT — **không** Conjunctions |
+| `card_text_resolution` | Then/Also/`:``;` trên một lá | Conjunctions + PSCT |
+| `general_rulebook` | Còn lại | Rulebook chung (vẫn loại Conjunctions nếu không phù hợp) |
+
+### DeckHelper — Settings & `/api/v1/agent/chat`
+
+Agent ReAct xây deck / tra cứu lá bài: `query_card_database`, `web_search`. Cũng qua **QueryAnalyzer** trước khi trả lời.
 
 ```bash
-cd backend && alembic upgrade head
+cd agents && python main_agent.py "Gợi ý deck Dragon Link budget."
 ```
+
+## API khác (tóm tắt)
+
+| Nhóm | Ví dụ |
+|------|--------|
+| Lá bài | `GET /api/v1/cards`, `POST /api/v1/cards/sync`, … |
+| LM Studio | `GET/PUT /api/v1/settings/lm-studio` |
+| Agent deck | `POST /api/v1/agent/chat` |
+
+Static ảnh lá bài: `/static/cards/{passcode}/...`
 
 ## CLI agent
 
 ```bash
 cd agents
 source .venv/bin/activate
-python main_agent.py "Tìm thông tin lá bài Dark Magician."
+python main_agent.py "Câu hỏi về deck hoặc lá bài..."
 ```
-
-Hiện tại CLI chỉ in stub — agent thật sẽ được triển khai ở bước tiếp theo.
 
 ## Lưu ý
 
-- File cấu hình LM Studio (`agents/config/lm_studio.json`) chưa được tạo — sẽ thêm khi tích hợp Settings.
-- Không commit `.env` / `.env.local`; chỉ dùng `.env.example` / `.env.local.example`.
+- Cấu hình LM Studio: trang **Settings** hoặc `agents/config/lm_studio.json`.
+- Không commit `.env` / `.env.local`.
+- Sau khi đổi code agent/RAG: **restart backend**.
+
+## Tài liệu thêm
+
+- [`docs/README.md`](docs/README.md) — workflow đầy đủ, schema DB, kiến trúc agent
+- [`architecture.md`](architecture.md) — quy ước monorepo
+- [`todo.md`](todo.md) — tiến độ
