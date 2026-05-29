@@ -61,7 +61,9 @@ cd frontend
 npm run dev
 ```
 
-3. Mở `http://localhost:3000` — landing page với link tới Dashboard và Login.
+3. Mở `http://localhost:3000` — landing page với link tới Dashboard, Thư viện lá bài và Login.
+
+4. Thư viện lá bài: `http://localhost:3000/cards` — grid ảnh `_small.jpg`, tìm kiếm, cuộn tải thêm, panel chi tiết bên phải.
 
 4. Kiểm tra backend: `GET http://localhost:8000/health` → `{"status":"ok","database":"connected"}`
 
@@ -92,6 +94,8 @@ createdb -U postgres ygo-helper
 | POST | `/api/v1/cards/sync` | Đồng bộ lá bài từ YGOPRODeck (nền) |
 | GET | `/api/v1/cards/sync/{job_id}` | Trạng thái job đồng bộ |
 | GET | `/api/v1/cards/sync/latest` | Job đồng bộ gần nhất |
+| GET | `/api/v1/cards?q=&offset=&limit=` | Danh sách lá bài (tìm kiếm + phân trang) |
+| GET | `/api/v1/cards/{passcode}` | Chi tiết lá bài |
 
 ## API (LM Studio & Agent)
 

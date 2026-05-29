@@ -6,9 +6,10 @@ from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.card import (
     SyncJobStatus,
@@ -18,6 +19,8 @@ from app.models.card import (
     YgoCardSet,
     YgoCardSyncJob,
 )
+from app.repositories.card_query_builder import build_order_by, build_search_filters
+from app.schemas.card_search import CardSearchParams
 from app.schemas.ygoprodeck import YgoCardApiSchema
 
 
@@ -198,3 +201,173 @@ class CardRepository:
         if local_path_cropped is not None:
             image_row.local_path_cropped = local_path_cropped
         await self._session.flush()
+
+    async def search_cards(
+        self,
+        params: CardSearchParams,
+    ) -> tuple[list[YgoCard], dict[int, str], int]:
+        """
+        Danh sách lá bài có phân trang + bộ lọc đa tiêu chí.
+
+        Returns:
+            (cards, thumbnail_small_path_by_passcode, total_count)
+        """
+        filters = build_search_filters(params)
+
+        count_stmt = select(func.count()).select_from(YgoCard)
+        if filters:
+            count_stmt = count_stmt.where(*filters)
+        total = int(await self._session.scalar(count_stmt) or 0)
+
+        order_primary, order_secondary = build_order_by(params)
+        stmt = (
+            select(YgoCard)
+            .order_by(order_primary, order_secondary)
+            .offset(params.offset)
+            .limit(params.limit)
+        )
+        if filters:
+            stmt = stmt.where(*filters)
+        cards = list((await self._session.scalars(stmt)).all())
+
+        thumb_map: dict[int, str] = {}
+        if cards:
+            passcodes = [c.passcode for c in cards]
+            img_stmt = (
+                select(YgoCardImage)
+                .where(
+                    YgoCardImage.card_passcode.in_(passcodes),
+                    YgoCardImage.local_path_small.isnot(None),
+                )
+                .order_by(
+                    YgoCardImage.card_passcode,
+                    YgoCardImage.is_default.desc(),
+                    YgoCardImage.id,
+                )
+            )
+            for img in (await self._session.scalars(img_stmt)).all():
+                if img.card_passcode not in thumb_map and img.local_path_small:
+                    thumb_map[img.card_passcode] = img.local_path_small
+
+        return cards, thumb_map, total
+
+    async def list_cards(
+        self,
+        *,
+        query: str | None,
+        offset: int,
+        limit: int,
+    ) -> tuple[list[YgoCard], dict[int, str], int]:
+        """Backward-compatible wrapper — chỉ tìm theo tên."""
+        from app.schemas.card_search import CardSearchParams, finalize_card_search
+
+        params = finalize_card_search(
+            CardSearchParams(q=query, offset=offset, limit=limit),
+        )
+        return await self.search_cards(params)
+
+    async def get_filter_options(self) -> dict[str, list[str]]:
+        """Giá trị distinct cho UI bộ lọc."""
+
+        async def distinct_str(column: Any) -> list[str]:
+            stmt = (
+                select(column)
+                .where(column.isnot(None))
+                .distinct()
+                .order_by(column)
+            )
+            return [str(row) for row in (await self._session.scalars(stmt)).all() if row]
+
+        attributes = await distinct_str(YgoCard.attribute)
+
+        monster_races_stmt = (
+            select(YgoCard.race)
+            .where(
+                YgoCard.race.isnot(None),
+                or_(
+                    YgoCard.frame_type.is_(None),
+                    YgoCard.frame_type.notin_(tuple(NON_MONSTER_FRAMES)),
+                ),
+            )
+            .distinct()
+            .order_by(YgoCard.race)
+        )
+        monster_races = [
+            str(r)
+            for r in (await self._session.scalars(monster_races_stmt)).all()
+            if r
+        ]
+
+        spell_races_stmt = (
+            select(YgoCard.race)
+            .where(YgoCard.frame_type == "spell", YgoCard.race.isnot(None))
+            .distinct()
+            .order_by(YgoCard.race)
+        )
+        spell_races = [str(r) for r in (await self._session.scalars(spell_races_stmt)).all() if r]
+
+        trap_races_stmt = (
+            select(YgoCard.race)
+            .where(YgoCard.frame_type == "trap", YgoCard.race.isnot(None))
+            .distinct()
+            .order_by(YgoCard.race)
+        )
+        trap_races = [str(r) for r in (await self._session.scalars(trap_races_stmt)).all() if r]
+
+        frame_types_stmt = (
+            select(YgoCard.frame_type)
+            .where(
+                YgoCard.frame_type.isnot(None),
+                YgoCard.frame_type.notin_(("token", "skill")),
+            )
+            .distinct()
+            .order_by(YgoCard.frame_type)
+        )
+        frame_types = [
+            str(f) for f in (await self._session.scalars(frame_types_stmt)).all() if f
+        ]
+
+        archetypes_stmt = (
+            select(YgoCard.archetype)
+            .where(YgoCard.archetype.isnot(None))
+            .distinct()
+            .order_by(YgoCard.archetype)
+            .limit(200)
+        )
+        archetypes_sample = [
+            str(a) for a in (await self._session.scalars(archetypes_stmt)).all() if a
+        ]
+
+        linkmarkers: set[str] = set()
+        markers_stmt = select(YgoCard.linkmarkers).where(YgoCard.linkmarkers.isnot(None))
+        for raw in (await self._session.scalars(markers_stmt)).all():
+            if isinstance(raw, list):
+                linkmarkers.update(str(m) for m in raw)
+
+        return {
+            "attributes": attributes,
+            "monster_races": monster_races,
+            "spell_races": spell_races,
+            "trap_races": trap_races,
+            "linkmarkers": sorted(linkmarkers),
+            "frame_types": frame_types,
+            "archetypes_sample": archetypes_sample,
+            "banlist_tcg_values": [
+                "Forbidden",
+                "Limited",
+                "Semi-Limited",
+                "Unlimited",
+            ],
+        }
+
+    async def get_card_by_passcode(self, passcode: int) -> YgoCard | None:
+        stmt = (
+            select(YgoCard)
+            .options(
+                selectinload(YgoCard.card_sets),
+                selectinload(YgoCard.card_images),
+                selectinload(YgoCard.card_prices),
+            )
+            .where(YgoCard.passcode == passcode)
+        )
+        return await self._session.scalar(stmt)

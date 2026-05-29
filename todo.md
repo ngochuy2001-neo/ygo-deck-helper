@@ -12,10 +12,11 @@
 - [x] Frontend Settings: trạng thái kết nối, chọn model, thử agent
 - [x] PostgreSQL: SQLAlchemy async + health check (`ygo-helper`)
 - [x] Đồng bộ lá bài YGOPRODeck → PostgreSQL + tải ảnh + Dashboard
+- [x] Bộ lọc thư viện lá bài YGO (quy tắc Spell/Trap/Link, API đa tiêu chí, UI filter panel)
 
 ## Bước tiếp theo
 
-- [ ] Trang tìm kiếm / xem lá bài từ DB local
+- [x] Trang thư viện lá bài `/cards` (grid + infinite scroll + chi tiết)
 - [ ] Deck builder (lưu deck vào PostgreSQL)
 - [ ] Auth (đăng nhập/đăng ký)
 - [ ] Agent monitor streaming (SSE)

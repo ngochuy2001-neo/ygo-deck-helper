@@ -19,6 +19,12 @@ export default function Home() {
             Vào Dashboard
           </Link>
           <Link
+            href="/cards"
+            className="rounded-full border border-zinc-300 px-6 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+          >
+            Thư viện lá bài
+          </Link>
+          <Link
             href="/settings"
             className="rounded-full border border-zinc-300 px-6 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
           >

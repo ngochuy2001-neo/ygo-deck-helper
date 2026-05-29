@@ -1,6 +1,8 @@
 import type {
   AgentChatRequest,
   AgentChatResponse,
+  CardDetail,
+  CardListResponse,
   CardStats,
   CardSyncJob,
   CardSyncRequest,
@@ -10,6 +12,7 @@ import type {
   LMStudioSettingsUpdate,
   LMStudioStatusResponse,
 } from "@/types";
+import type { CardFilterOptions, CardSearchFilters, StatRange } from "@/types/cardSearch";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -107,4 +110,61 @@ export async function getCardSyncJob(jobId: number): Promise<CardSyncJob> {
 /** Job đồng bộ gần nhất. */
 export async function getLatestCardSync(): Promise<CardSyncJob | null> {
   return fetchApi<CardSyncJob | null>("/api/v1/cards/sync/latest");
+}
+
+function appendStatRange(
+  search: URLSearchParams,
+  prefix: string,
+  range?: StatRange | null,
+): void {
+  if (!range) return;
+  if (range.min != null) search.set(`${prefix}_min`, String(range.min));
+  if (range.max != null) search.set(`${prefix}_max`, String(range.max));
+}
+
+function appendList(search: URLSearchParams, key: string, values?: string[]): void {
+  if (values && values.length > 0) search.set(key, values.join(","));
+}
+
+/** Metadata bộ lọc (distinct values). */
+export async function getCardFilterOptions(): Promise<CardFilterOptions> {
+  return fetchApi<CardFilterOptions>("/api/v1/cards/filter-options");
+}
+
+/** Danh sách lá bài (phân trang + tìm kiếm + bộ lọc YGO). */
+export async function listCards(
+  filters: CardSearchFilters & { offset?: number; limit?: number },
+): Promise<CardListResponse> {
+  const search = new URLSearchParams();
+  if (filters.passcode) {
+    search.set("passcode", String(filters.passcode));
+  } else {
+    if (filters.q?.trim()) search.set("q", filters.q.trim());
+    if (filters.card_group && filters.card_group !== "all") {
+      search.set("card_group", filters.card_group);
+    }
+    appendList(search, "frame_types", filters.frame_types);
+    appendList(search, "attributes", filters.attributes);
+    appendList(search, "races", filters.races);
+    appendList(search, "spell_races", filters.spell_races);
+    appendList(search, "trap_races", filters.trap_races);
+    appendStatRange(search, "level", filters.level);
+    appendStatRange(search, "atk", filters.atk);
+    appendStatRange(search, "def", filters.def);
+    appendStatRange(search, "scale", filters.scale);
+    appendStatRange(search, "linkval", filters.linkval);
+    appendList(search, "linkmarkers", filters.linkmarkers);
+    if (filters.archetype?.trim()) search.set("archetype", filters.archetype.trim());
+    appendList(search, "banlist_tcg", filters.banlist_tcg);
+  }
+  if (filters.sort) search.set("sort", filters.sort);
+  if (filters.order) search.set("order", filters.order);
+  search.set("offset", String(filters.offset ?? 0));
+  search.set("limit", String(filters.limit ?? 40));
+  return fetchApi<CardListResponse>(`/api/v1/cards?${search.toString()}`);
+}
+
+/** Chi tiết một lá bài. */
+export async function getCardDetail(passcode: number): Promise<CardDetail> {
+  return fetchApi<CardDetail>(`/api/v1/cards/${passcode}`);
 }

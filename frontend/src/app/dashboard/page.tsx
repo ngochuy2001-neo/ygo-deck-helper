@@ -17,6 +17,12 @@ export default function DashboardPage() {
           </div>
           <div className="flex gap-4 text-sm">
             <Link
+              href="/cards"
+              className="text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+            >
+              Thư viện lá bài
+            </Link>
+            <Link
               href="/settings"
               className="text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
             >
