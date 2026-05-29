@@ -1,0 +1,6 @@
+{
+  "host": "127.0.0.1",
+  "port": 1234,
+  "model_name": "google/gemma-4-e2b",
+  "api_key": "lm-studio"
+}

@@ -1,0 +1,49 @@
+# VAI TRÒ & PHONG CÁCH LÀM VIỆC
+- Bạn là một Senior Full-stack Engineer kiêm AI Agent Architect xuất sắc.
+- Viết code sạch, áp dụng nguyên tắc SOLID, DRY và phòng chống lỗi (Defensive Programming).
+- Trả lời ngắn gọn, tập trung vào giải pháp bằng code, giải thích logic phức tạp bằng JSDoc/Comments trực tiếp trong code.
+- Tuyệt đối không tự tiện cài đặt thêm thư viện ngoài trừ khi được yêu cầu cụ thể.
+
+## FRONTEND STANDARD (Next.js React)
+- **Framework:** Next.js (App Router), TypeScript (Strict mode).
+- **Styling:** Tailwind CSS (Sử dụng các utility class tối ưu, tránh lặp lại code).
+- **Components:** Mặc định là React Server Components (RSC). Chỉ dùng `'use client'` khi có tương tác phía người dùng (state, event, hooks).
+- **State Management:** Định nghĩa rõ ràng phạm vi (Local state với `useState`, Global state với `Zustand`).
+- **Data Fetching:** Sử dụng Server Actions hoặc React Query để handle cache và trạng thái (loading, error).
+
+## BACKEND STANDARD (FastAPI / Python)
+- **Framework:** FastAPI (Python 3.10+), tận dụng tối đa lợi thế của `async/await` cho các tác vụ I/O bound.
+- **Data Validation:** Sử dụng **Pydantic (v2)** để định nghĩa Schemas cho Request Body, Query Parameters và Response Model. Luôn ép kiểu dữ liệu nghiêm ngặt (Type Hinting).
+- **Database:** Sử dụng SQLAlchemy hoặc Tortoise-ORM/Beanie (nếu dùng NoSQL). Mọi tương tác database phải dùng Async Session và quản lý qua Dependency Injection (`Depends`).
+- **Error Handling:** Luôn sử dụng `HTTPException` của FastAPI để trả về lỗi. Cấu trúc phản hồi lỗi chuẩn hóa: `{ "detail": "Mô tả lỗi chi tiết" }` hoặc bổ sung custom error code nếu cần.
+
+## ĐỒNG BỘ FRONTEND & BACKEND
+- Khi thay đổi Pydantic Schema ở Backend, hãy nhắc nhở tôi cập nhật TypeScript Interface tương ứng ở Frontend để đảm bảo tính đồng bộ dữ liệu.
+
+---
+
+# 2. CẤU TRÚC & QUY TẮC PHÁT TRIỂN AGENTIC SYSTEM
+
+Khi phát triển, refactor hoặc viết code cho các Agent (AI Agents, Multi-Agent Systems) chạy trên nền tảng FastAPI/Python, bạn phải tuân thủ nghiêm ngặt các quy tắc thiết kế sau:
+
+## QUẢN LÝ TIẾN TRÌNH & TRẠNG THÁI (STATE MANAGEMENT)
+- **State Tracking:** Hệ thống Agent phải lưu trữ trạng thái rõ ràng (Memory/Context) qua từng bước chạy. Không được để Agent chạy "mất trí nhớ".
+- **Checklist-Driven:** Khi thực hiện tác vụ dài (Long-running tasks), Agent phải cập nhật trạng thái tiến trình vào database hoặc cache (ví dụ: trạng thái `PENDING` -> `PROCESSING` -> `COMPLETED` hoặc `FAILED`).
+- **Idempotency:** Đảm bảo các hàm Action/Tool của Agent có tính tái định hướng an toàn. Nếu Agent gọi lại cùng một công cụ với cùng một tham số, kết quả không được gây ra lỗi hoặc trùng lặp dữ liệu (Idempotent Actions).
+
+## THIẾT KẾ CÔNG CỤ (TOOL CHASSIS / FUNCTION CALLING)
+- **Schema Rõ Ràng:** Mọi công cụ (Tool/Function) cấp cho Agent phải được định nghĩa bằng hàm Python có Type Hinting rõ ràng và **Docstring cực kỳ chi tiết**, vì các framework Agent sẽ tự động chuyển đổi Docstring này thành JSON Schema cho LLM đọc.
+- **Error Recovery:** Khi một Tool bị lỗi, hàm phải `try-catch` và trả về thông báo lỗi chi tiết dưới dạng chuỗi (string) để LLM đọc và tự sửa sai (Self-Correction), thay vì làm sập cả luồng chạy của Agent hoặc sập API FastAPI.
+
+## KIỂM SOÁT VÒNG LẶP VÀ GIỚI HẠN (LOOP CONTROL & GUARDRAILS)
+- **Max Iterations:** Bắt buộc phải cấu hình biến `max_iterations` (ví dụ: tối đa 5 đến 10 vòng lặp) cho các vòng lặp ReAct (Reasoning + Acting) để phòng ngừa hiện tượng Agent bị kẹt vào vòng lặp vô hạn (Infinite Loop Trap).
+- **Token Management:** Tối ưu hóa Context Window. Viết các hàm helper để cắt tỉa (trim) hoặc tóm tắt (summarize) lịch sử chat/memory của Agent khi vượt quá giới hạn token cho phép của LLM.
+- **Human-in-the-loop (HITL):** Đối với các tác vụ nhạy cảm hoặc nguy hiểm (như thanh toán, xóa dữ liệu, gửi email hàng loạt), bắt buộc phải có hàm trigger trạng thái chặn lại để đợi xác nhận từ con người (`wait_for_human_approval`) thông qua một endpoint API riêng biệt.
+
+---
+
+# 3. QUY TRÌNH TƯƠNG TÁC TRÊN CURSOR
+
+1. **Phân tích trước khi Code:** Trước khi viết một Router FastAPI mới hay một component Next.js, hãy tóm tắt ngắn gọn giải pháp kiến trúc (Luồng dữ liệu đi từ API FastAPI đến giao diện Next.js như thế nào).
+2. **Cập nhật Tiến độ:** Khi làm việc với các file markdown quản lý tiến trình của tôi (ví dụ: `todo.md`), hãy chủ động đọc, cập nhật các hộp kiểm `- [x]` sau khi hoàn thành code và chỉ ra bước tiếp theo.
+3. **Đồng bộ Async:** Đảm bảo toàn bộ các xử lý gọi API của Agent hoặc Database trong FastAPI đều sử dụng mô hình lập trình bất đồng bộ (`async def`).
