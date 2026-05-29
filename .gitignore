@@ -1,3 +1,6 @@
+# Card image storage
+backend/storage/
+
 # Python
 __pycache__/
 *.py[cod]

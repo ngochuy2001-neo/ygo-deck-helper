@@ -26,6 +26,18 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = "2001"
     POSTGRES_DB: str = "ygo-helper"
 
+    # YGOPRODeck sync
+    YGOPRODECK_API_BASE: str = "https://db.ygoprodeck.com/api/v7"
+    CARD_IMAGES_DIR: str = ""
+    CARD_SYNC_PAGE_SIZE: int = 100
+    CARD_SYNC_REQUEST_DELAY_MS: int = 100
+
+    @property
+    def card_images_dir(self) -> Path:
+        if self.CARD_IMAGES_DIR.strip():
+            return Path(self.CARD_IMAGES_DIR).resolve()
+        return Path(__file__).resolve().parents[2] / "storage" / "cards"
+
     @property
     def database_url(self) -> str:
         """URL async cho SQLAlchemy + asyncpg."""

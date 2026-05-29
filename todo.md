@@ -11,11 +11,12 @@
 - [x] AgentScope ReAct agent (`agents/workflows/react_deck_agent.py`) với LM Studio
 - [x] Frontend Settings: trạng thái kết nối, chọn model, thử agent
 - [x] PostgreSQL: SQLAlchemy async + health check (`ygo-helper`)
+- [x] Đồng bộ lá bài YGOPRODeck → PostgreSQL + tải ảnh + Dashboard
 
 ## Bước tiếp theo
 
-- [ ] ORM models & migrations (Alembic) cho lá bài / deck
-- [ ] Tích hợp API YGO thật cho tools
+- [ ] Trang tìm kiếm / xem lá bài từ DB local
+- [ ] Deck builder (lưu deck vào PostgreSQL)
 - [ ] Auth (đăng nhập/đăng ký)
 - [ ] Agent monitor streaming (SSE)
 - [ ] Trang xây dựng deck đầy đủ

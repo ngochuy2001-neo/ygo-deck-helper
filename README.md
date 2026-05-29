@@ -88,8 +88,12 @@ createdb -U postgres ygo-helper
 | Method | Path | Mô tả |
 |--------|------|--------|
 | GET | `/health` | Health check (bao gồm trạng thái PostgreSQL) |
+| GET | `/api/v1/cards/stats` | Thống kê lá bài trong DB |
+| POST | `/api/v1/cards/sync` | Đồng bộ lá bài từ YGOPRODeck (nền) |
+| GET | `/api/v1/cards/sync/{job_id}` | Trạng thái job đồng bộ |
+| GET | `/api/v1/cards/sync/latest` | Job đồng bộ gần nhất |
 
-## API (planned)
+## API (LM Studio & Agent)
 
 | Method | Path | Mô tả |
 |--------|------|--------|
@@ -97,6 +101,14 @@ createdb -U postgres ygo-helper
 | PUT | `/api/v1/settings/lm-studio` | Lưu cấu hình |
 | GET | `/api/v1/settings/lm-studio/status` | Trạng thái LM Studio |
 | POST | `/api/v1/agent/chat` | Chạy ReAct agent |
+
+## Đồng bộ lá bài (Dashboard)
+
+Trên `/dashboard`, nút **Đồng bộ lá bài từ YGOPRODeck** gọi [YGOPRODeck API v7](https://ygoprodeck.com/api-guide/), lưu vào PostgreSQL và tải ảnh vào `backend/storage/cards/` (phục vụ qua `/static/cards/...`).
+
+```bash
+cd backend && alembic upgrade head
+```
 
 ## CLI agent
 
