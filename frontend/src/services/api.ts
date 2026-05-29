@@ -1,6 +1,9 @@
 import type {
   AgentChatRequest,
   AgentChatResponse,
+  CardStats,
+  CardSyncJob,
+  CardSyncRequest,
   HealthResponse,
   LMStudioModelsResponse,
   LMStudioSettings,
@@ -79,4 +82,29 @@ export async function agentChat(
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+/** Thống kê lá bài trong database. */
+export async function getCardStats(): Promise<CardStats> {
+  return fetchApi<CardStats>("/api/v1/cards/stats");
+}
+
+/** Bắt đầu đồng bộ lá bài từ YGOPRODeck. */
+export async function startCardSync(
+  payload: CardSyncRequest,
+): Promise<CardSyncJob> {
+  return fetchApi<CardSyncJob>("/api/v1/cards/sync", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Lấy trạng thái job đồng bộ. */
+export async function getCardSyncJob(jobId: number): Promise<CardSyncJob> {
+  return fetchApi<CardSyncJob>(`/api/v1/cards/sync/${jobId}`);
+}
+
+/** Job đồng bộ gần nhất. */
+export async function getLatestCardSync(): Promise<CardSyncJob | null> {
+  return fetchApi<CardSyncJob | null>("/api/v1/cards/sync/latest");
 }
